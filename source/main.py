@@ -1,8 +1,8 @@
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-from tensorflow import keras
-from tensorflow.keras import layers
+from sklearn.utils import shuffle
+import os
 
 
 def dataframe_to_dataset(dataframe):
@@ -13,21 +13,31 @@ def dataframe_to_dataset(dataframe):
     return ds
 
 
+def split_data(dataframe):
+    dataframe = shuffle(dataframe)
+    n = dataframe.shape[0]
+
+    x = n / 10
+
+    val_data = dataframe[0:x]
+    test_data = dataframe[x:(2 * x)]
+    train_data = dataframe[(2 * x):]
+
+    print("x")
+
+
 def main():
     dataframe = pd.read_csv("dataset.csv")
+    split_data(dataframe)
 
-    val_dataframe = dataframe.sample(frac=0.2, random_state=1337)
-    train_dataframe = dataframe.drop(val_dataframe.index)
-
-    print(
-        "Using %d samples for training and %d for validation"
-        % (len(train_dataframe), len(val_dataframe))
-    )
-
-    train_ds = dataframe_to_dataset(train_dataframe)
-    val_ds = dataframe_to_dataset(val_dataframe)
 
 
 if __name__ == '__main__':
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
+    if tf.test.gpu_device_name():
+        print('GPU found')
+    else:
+        print("No GPU found")
     main()
 
