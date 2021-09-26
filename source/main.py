@@ -9,35 +9,39 @@ def dataframe_to_dataset(dataframe):
     dataframe = dataframe.copy()
     labels = dataframe.pop("stroke")
     ds = tf.data.Dataset.from_tensor_slices((dict(dataframe), labels))
-    ds = ds.shuffle(buffer_size=len(dataframe))
     return ds
 
 
 def split_data(dataframe):
     dataframe = shuffle(dataframe)
-    n = dataframe.shape[0]
 
-    x = n / 10
+    df_true = dataframe[dataframe["stroke"] == 1]
+    df_false = dataframe[dataframe["stroke"] == 0]
 
-    val_data = dataframe[0:x]
-    test_data = dataframe[x:(2 * x)]
-    train_data = dataframe[(2 * x):]
+    n1 = df_true.shape[0]
+    x1 = int(n1 / 10)
 
-    print("x")
+    n2 = df_false.shape[0]
+    x2 = int(n2 / 10)
+
+    val_data =  pd.concat([df_true[:x1], df_false[:x2]])
+    test_data = pd.concat([df_true[x1:(x1 * 2)], df_false[x2:(x2 * 2)]])
+    train_data = pd.concat([df_true[(x1 * 2):], df_false[(x2 * 2):]])
+
+    val_data = shuffle(val_data)
+    test_data = shuffle(test_data)
+    train_data = shuffle(train_data)
+
+    return train_data, test_data, val_data
 
 
 def main():
     dataframe = pd.read_csv("dataset.csv")
-    split_data(dataframe)
-
+    train_data, test_data, val_data = split_data(dataframe)
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-
-    if tf.test.gpu_device_name():
-        print('GPU found')
-    else:
-        print("No GPU found")
+    physical_devices = tf.config.list_physical_devices("GPU")
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
     main()
 
