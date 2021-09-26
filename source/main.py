@@ -1,16 +1,33 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+import tensorflow as tf
+import numpy as np
+import pandas as pd
+from tensorflow import keras
+from tensorflow.keras import layers
 
 
-# Press the green button in the gutter to run the script.
+def dataframe_to_dataset(dataframe):
+    dataframe = dataframe.copy()
+    labels = dataframe.pop("stroke")
+    ds = tf.data.Dataset.from_tensor_slices((dict(dataframe), labels))
+    ds = ds.shuffle(buffer_size=len(dataframe))
+    return ds
+
+
+def main():
+    dataframe = pd.read_csv("dataset.csv")
+
+    val_dataframe = dataframe.sample(frac=0.2, random_state=1337)
+    train_dataframe = dataframe.drop(val_dataframe.index)
+
+    print(
+        "Using %d samples for training and %d for validation"
+        % (len(train_dataframe), len(val_dataframe))
+    )
+
+    train_ds = dataframe_to_dataset(train_dataframe)
+    val_ds = dataframe_to_dataset(val_dataframe)
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    main()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
