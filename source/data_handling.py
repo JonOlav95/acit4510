@@ -12,6 +12,8 @@ def one_hot_encoding(df):
 
 
 def split_data(df):
+    df.fillna(df.mean(), inplace=True)
+    df = shuffle(df)
     df.pop("id")
     df = df[df.gender != "Other"]
     df = one_hot_encoding(df)
