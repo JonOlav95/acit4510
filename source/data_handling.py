@@ -14,25 +14,29 @@ def one_hot_encoding(df):
 def split_data(df):
     df.fillna(df.mean(), inplace=True)
     df = shuffle(df)
+
+    # Drop the ID Column
     df.pop("id")
+
+    # Drop the "other" gender rows as there is only one
     df = df[df.gender != "Other"]
     df = one_hot_encoding(df)
 
     df_true = df[df["stroke"] == 1]
     df_false = df[df["stroke"] == 0]
 
-    n1 = df_true.shape[0]
-    x1 = int(n1 / 10)
+    x1 = int(df_true.shape[0] / 10)
 
-    n2 = df_false.shape[0]
-    x2 = int(n2 / 10)
+    test_data = pd.concat([df_true[:x1], df_false[:x1]])
+    train_data = pd.concat([df_true[x1:], df_false[x1:]])
 
-    val_data = pd.concat([df_true[:x1], df_false[:x2]])
-    test_data = pd.concat([df_true[x1:(x1 * 2)], df_false[x2:(x2 * 2)]])
-    train_data = pd.concat([df_true[(x1 * 2):], df_false[(x2 * 2):]])
-
-    val_data = shuffle(val_data)
     test_data = shuffle(test_data)
     train_data = shuffle(train_data)
 
-    return train_data, test_data, val_data
+    y_train = train_data["stroke"]
+    x_train = train_data.drop("stroke", axis=1)
+
+    y_test = test_data["stroke"]
+    x_test = test_data.drop("stroke", axis=1)
+
+    return x_train, y_train, x_test, y_test
