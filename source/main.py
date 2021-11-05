@@ -11,10 +11,18 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.base import clone
 
 
-def my_cross_val(x_train, y_train):
-    model = LogisticRegression(random_state=0, max_iter=10000)
-    skfolds = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-    threshold = 0.2
+def cast_by_threshold(y, threshold):
+    for i in range(len(y)):
+        if y[i] > threshold:
+            y[i] = 1
+        else:
+            y[i] = 0
+
+
+def my_cross_val(model, x_train, y_train):
+    skfolds = StratifiedKFold(n_splits=6, shuffle=True, random_state=42)
+    threshold = 0.18
+    avg_f1 = 0
 
     for train_index, test_index in skfolds.split(x_train, y_train):
         clone_model = clone(model)
@@ -25,9 +33,16 @@ def my_cross_val(x_train, y_train):
 
         clone_model.fit(x_train_folds, y_train_folds)
         y_pred = clone_model.predict_proba(x_test_fold)
+        y_pred = y_pred[:, 1]
 
-        f1 = precision_recall_values(y_pred, y_test_fold, threshold)
-        print("F1: " + str(f1))
+        cast_by_threshold(y_pred, threshold)
+
+        f1 = sklearn.metrics.f1_score(y_test_fold, y_pred, average="macro")
+
+        avg_f1 += f1
+
+    avg_f1 /= 6
+    return avg_f1
 
 
 def roc_evaluate(clf, x, y_true, label=None):
@@ -43,19 +58,41 @@ def precision_recall_evaluate(clf, x, y_true, label=None):
     precision_recall_plot(precision, recall, thresholds, label)
 
 
+def backward_stepwise_selection(x_train, y_train):
+    model = LogisticRegression(random_state=0, max_iter=10000)
+
+    highest_f1 = my_cross_val(model, x_train, y_train)
+    worst_feature = x_train.columns[0]
+    length = len(x_train.columns) - 2
+
+    for j in range(length):
+        for i in range(len(x_train.columns)):
+            clone_model = clone(model)
+
+            x_step = x_train.drop(x_train.columns[i], axis=1)
+            f1 = my_cross_val(clone_model, x_step, y_train)
+
+            if f1 > highest_f1:
+                worst_feature = x_train.columns[i]
+
+        print("Permanent removing " + str(worst_feature))
+        x_train.drop(worst_feature, axis=1, inplace=True)
+        clone_model = clone(model)
+
+        f1 = my_cross_val(clone_model, x_train, y_train)
+        print("F1: " + str(f1))
+
+
 def main():
     dataframe = pd.read_csv("dataset.csv")
     x_train, y_train, x_test, y_test = split_data(dataframe)
 
-    print(x_train.shape)
-    print(y_train.shape)
-
-    my_cross_val(x_train, y_train)
-
-    '''
     lr_clf = LogisticRegression(random_state=0, max_iter=10000)
     forest_clf = RandomForestClassifier(random_state=42)
 
+    backward_stepwise_selection(x_train, y_train)
+    #my_cross_val(lr_clf, x_train, y_train)
+    '''
     lr_clf.fit(x_train, y_train)
     forest_clf.fit(x_train, y_train)
 
