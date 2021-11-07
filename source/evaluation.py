@@ -1,5 +1,6 @@
 import sklearn
 from matplotlib import pyplot as plt
+import seaborn as sns
 
 
 def precision_recall_values(y_predict, y_true, threshold):
@@ -58,3 +59,10 @@ def plot_roc_curve(tpr, fpr, label=None):
     plt.plot([0, 1], [0, 1], "k--")
     plt.ylabel("True Positive Rate (Recall)")
     plt.xlabel("False Positive Rate")
+
+
+def plot_corr(df):
+    plt.figure(figsize=(12, 10))
+    cor = df.corr().round(2)
+    sns.heatmap(cor, annot=True, cmap="RdYlGn")
+    plt.show()

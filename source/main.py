@@ -5,10 +5,11 @@ import sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
-from data_handling import *
+from data_cleaning import *
 from evaluation import *
 from sklearn.model_selection import StratifiedKFold
 from sklearn.base import clone
+import seaborn as sns
 
 
 def cast_by_threshold(y, threshold):
@@ -60,15 +61,16 @@ def precision_recall_evaluate(clf, x, y_true, label=None):
 
 def backward_stepwise_selection(x_train, y_train):
     model = LogisticRegression(random_state=0, max_iter=10000)
-
-    highest_f1 = my_cross_val(model, x_train, y_train)
-    worst_feature = x_train.columns[0]
     length = len(x_train.columns) - 2
 
     for j in range(length):
-        for i in range(len(x_train.columns)):
-            clone_model = clone(model)
+        clone_model = clone(model)
+        x_step = x_train.drop(x_train.columns[0], axis=1)
+        worst_feature = x_train.columns[0]
+        highest_f1 = my_cross_val(clone_model, x_step, y_train)
 
+        for i in range(1, len(x_train.columns)):
+            clone_model = clone(model)
             x_step = x_train.drop(x_train.columns[i], axis=1)
             f1 = my_cross_val(clone_model, x_step, y_train)
 
@@ -82,17 +84,21 @@ def backward_stepwise_selection(x_train, y_train):
         f1 = my_cross_val(clone_model, x_train, y_train)
         print("F1: " + str(f1))
 
+        clone_model.fit(x_train, y_train)
+        precision_recall_evaluate(clone_model, x_train, y_train)
+
 
 def main():
     dataframe = pd.read_csv("dataset.csv")
+    dataframe = clean_data(dataframe)
     x_train, y_train, x_test, y_test = split_data(dataframe)
-
-    lr_clf = LogisticRegression(random_state=0, max_iter=10000)
-    forest_clf = RandomForestClassifier(random_state=42)
 
     backward_stepwise_selection(x_train, y_train)
     #my_cross_val(lr_clf, x_train, y_train)
     '''
+    lr_clf = LogisticRegression(random_state=0, max_iter=10000)
+    forest_clf = RandomForestClassifier(random_state=42)
+    
     lr_clf.fit(x_train, y_train)
     forest_clf.fit(x_train, y_train)
 

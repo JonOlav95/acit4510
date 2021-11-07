@@ -1,17 +1,25 @@
 import pandas as pd
+import sklearn
 from sklearn.utils import shuffle
 
 
 def one_hot_encoding(df):
     for col in df.columns:
         if df[col].dtypes == object:
+            n_uniques = df[col].unique()
+
+            if len(n_uniques) == 2:
+                df[col] = df[col].replace([n_uniques[0]], 0)
+                df[col] = df[col].replace([n_uniques[1]], 1)
+                continue
+
             name = df[col].name
             df = pd.concat([df.drop(name, axis=1), pd.get_dummies(df[name], prefix=name)], axis=1)
 
     return df
 
 
-def split_data(df):
+def clean_data(df):
     df.fillna(df.mean(), inplace=True)
     df = shuffle(df)
 
@@ -22,6 +30,20 @@ def split_data(df):
     df = df[df.gender != "Other"]
     df = one_hot_encoding(df)
 
+    scaler = sklearn.preprocessing.StandardScaler()
+    scale_columns = ["age", "bmi", "avg_glucose_level"]
+    scale = scaler.fit_transform(df[scale_columns])
+    scale = pd.DataFrame(scale, columns=scale_columns)
+    df = df.drop(columns=scale_columns, axis=1)
+    scale.reset_index(drop=True, inplace=True)
+    df.reset_index(drop=True, inplace=True)
+
+    df = pd.concat([df, scale], axis=1)
+
+    return df
+
+
+def split_data(df):
     df_true = df[df["stroke"] == 1]
     df_false = df[df["stroke"] == 0]
 
