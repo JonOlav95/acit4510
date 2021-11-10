@@ -6,10 +6,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt
 from data_cleaning import *
-from evaluation import *
+from plotting import *
 from sklearn.model_selection import StratifiedKFold
 from sklearn.base import clone
-import seaborn as sns
 
 
 def cast_by_threshold(y, threshold):
@@ -53,13 +52,7 @@ def roc_evaluate(clf, x, y_true, label=None):
     plot_roc_curve(tpr, fpr, label)
 
 
-def precision_recall_evaluate(clf, x, y_true, label=None):
-    y_proba = clf.predict_proba(x)
-    precision, recall, thresholds = sklearn.metrics.precision_recall_curve(y_true, y_proba[:, 1])
-    precision_recall_plot(precision, recall, thresholds, label)
-
-
-def backward_stepwise_selection(x_train, y_train):
+def backward_stepwise_selection(x_train, y_train, x_test, y_test):
     model = LogisticRegression(random_state=0, max_iter=10000)
     length = len(x_train.columns) - 2
 
@@ -79,21 +72,36 @@ def backward_stepwise_selection(x_train, y_train):
 
         print("Permanent removing " + str(worst_feature))
         x_train.drop(worst_feature, axis=1, inplace=True)
+        x_test.drop(worst_feature, axis=1, inplace=True)
         clone_model = clone(model)
 
         f1 = my_cross_val(clone_model, x_train, y_train)
         print("F1: " + str(f1))
 
         clone_model.fit(x_train, y_train)
-        precision_recall_evaluate(clone_model, x_train, y_train)
+        precision_recall_plot(clone_model, x_test, y_test)
+
+
+def tmp(x_train, y_train, x_test, y_test):
+    model = LogisticRegression(random_state=0, max_iter=10000)
+    model.fit(x_train, y_train)
+    print("-" * 20 + "logistic regiression" + "-" * 20)
+    y_pred = model.predict(x_test)
+    arg_test = {"y_true": y_test, "y_pred": y_pred}
+    print(sklearn.metrics.confusion_matrix(**arg_test))
+    print(sklearn.metrics.classification_report(**arg_test))
 
 
 def main():
     dataframe = pd.read_csv("dataset.csv")
+
+    print(dataframe["bmi"].describe())
     dataframe = clean_data(dataframe)
     x_train, y_train, x_test, y_test = split_data(dataframe)
+    #tmp(x_train, y_train, x_test, y_test)
 
-    backward_stepwise_selection(x_train, y_train)
+
+    backward_stepwise_selection(x_train, y_train, x_test, y_test)
     #my_cross_val(lr_clf, x_train, y_train)
     '''
     lr_clf = LogisticRegression(random_state=0, max_iter=10000)

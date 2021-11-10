@@ -48,9 +48,10 @@ def split_data(df):
     df_false = df[df["stroke"] == 0]
 
     x1 = int(df_true.shape[0] / 10)
+    x2 = int(df_false.shape[0] / 10)
 
-    test_data = pd.concat([df_true[:x1], df_false[:x1]])
-    train_data = pd.concat([df_true[x1:], df_false[x1:]])
+    test_data = pd.concat([df_true[:x1], df_false[:x2]])
+    train_data = pd.concat([df_true[x1:], df_false[x2:]])
 
     test_data = shuffle(test_data)
     train_data = shuffle(train_data)
