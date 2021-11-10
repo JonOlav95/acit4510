@@ -11,16 +11,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.base import clone
 
 
-def cast_by_threshold(y, threshold):
-    for i in range(len(y)):
-        if y[i] > threshold:
-            y[i] = 1
-        else:
-            y[i] = 0
-
-
 def my_cross_val(model, x_train, y_train):
-    skfolds = StratifiedKFold(n_splits=6, shuffle=True, random_state=42)
+    skfolds = StratifiedKFold(n_splits=6, shuffle=True)
     threshold = 0.18
     avg_f1 = 0
 
@@ -33,9 +25,8 @@ def my_cross_val(model, x_train, y_train):
 
         clone_model.fit(x_train_folds, y_train_folds)
         y_pred = clone_model.predict_proba(x_test_fold)
-        y_pred = y_pred[:, 1]
 
-        cast_by_threshold(y_pred, threshold)
+        y_pred = [1 if x >= threshold else 0 for x in y_pred[:, 1]]
 
         f1 = sklearn.metrics.f1_score(y_test_fold, y_pred, average="macro")
 
@@ -69,8 +60,6 @@ def backward_stepwise_selection(x_train, y_train, x_test, y_test):
             x_step = x_train.drop(x_train.columns[i], axis=1)
             f1 = my_cross_val(clone_model, x_step, y_train)
 
-            print(x_train.shape)
-
             if f1 > highest_f1:
                 worst_feature = x_train.columns[i]
 
@@ -102,16 +91,26 @@ def tmp(x_train, y_train, x_test, y_test):
     print(sklearn.metrics.classification_report(**arg_test))
 
 
+def one_feature(x_train, y_train, x_test, y_test):
+    x_train = x_train[["hypertension"]]
+    x_test = x_test[["hypertension"]]
+    model = LogisticRegression(random_state=0, max_iter=10000)
+    model.fit(x_train, y_train)
+    y_pred = model.predict_proba(x_test)
+    y_pred = [1 if x >= 0.18 else 0 for x in y_pred[:, 1]]
+    f1 = sklearn.metrics.f1_score(y_test, y_pred, average="macro")
+    print("F1: " + str(f1))
+
+
 def main():
     dataframe = pd.read_csv("dataset.csv")
 
-    print(dataframe["bmi"].describe())
     dataframe = clean_data(dataframe)
     x_train, y_train, x_test, y_test = split_data(dataframe)
     #tmp(x_train, y_train, x_test, y_test)
 
-
-    backward_stepwise_selection(x_train, y_train, x_test, y_test)
+    one_feature(x_train, y_train, x_test, y_test)
+    #backward_stepwise_selection(x_train, y_train, x_test, y_test)
     #my_cross_val(lr_clf, x_train, y_train)
     '''
     lr_clf = LogisticRegression(random_state=0, max_iter=10000)
