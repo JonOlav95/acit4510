@@ -54,7 +54,9 @@ def roc_evaluate(clf, x, y_true, label=None):
 
 def backward_stepwise_selection(x_train, y_train, x_test, y_test):
     model = LogisticRegression(random_state=0, max_iter=10000)
-    length = len(x_train.columns) - 2
+    length = len(x_train.columns) - 1
+
+    f1_scores = []
 
     for j in range(length):
         clone_model = clone(model)
@@ -67,6 +69,8 @@ def backward_stepwise_selection(x_train, y_train, x_test, y_test):
             x_step = x_train.drop(x_train.columns[i], axis=1)
             f1 = my_cross_val(clone_model, x_step, y_train)
 
+            print(x_train.shape)
+
             if f1 > highest_f1:
                 worst_feature = x_train.columns[i]
 
@@ -76,10 +80,16 @@ def backward_stepwise_selection(x_train, y_train, x_test, y_test):
         clone_model = clone(model)
 
         f1 = my_cross_val(clone_model, x_train, y_train)
+        f1_scores.append(f1)
         print("F1: " + str(f1))
 
         clone_model.fit(x_train, y_train)
         precision_recall_plot(clone_model, x_test, y_test)
+
+    plt.plot(list(reversed(f1_scores)))
+    plt.xlabel("Number of features")
+    plt.ylabel("F1 Score")
+    plt.show()
 
 
 def tmp(x_train, y_train, x_test, y_test):
