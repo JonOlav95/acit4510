@@ -1,6 +1,9 @@
+from imblearn.over_sampling import SMOTE
 import pandas as pd
 import sklearn
 from sklearn.utils import shuffle
+
+from normalizer import Normalizer
 
 
 def one_hot_encoding(df):
@@ -21,45 +24,33 @@ def one_hot_encoding(df):
 
 def clean_data(df):
     df.fillna(df.mean(), inplace=True)
-    df = shuffle(df)
+    #df = shuffle(df)
 
     # Drop the ID Column
     df.pop("id")
 
     # Drop the "other" gender rows as there is only one
     df = df[df.gender != "Other"]
-    df = one_hot_encoding(df)
+    df = pd.get_dummies(df)
 
-    scaler = sklearn.preprocessing.StandardScaler()
-    scale_columns = ["age", "bmi", "avg_glucose_level"]
-    scale = scaler.fit_transform(df[scale_columns])
-    scale = pd.DataFrame(scale, columns=scale_columns)
-    df = df.drop(columns=scale_columns, axis=1)
-    scale.reset_index(drop=True, inplace=True)
-    df.reset_index(drop=True, inplace=True)
+    normalizer = Normalizer()
 
-    df = pd.concat([df, scale], axis=1)
+    df["age"] = normalizer.normalize("age", df["age"])
+    df["bmi"] = normalizer.normalize("bmi", df["bmi"])
+    df["avg_glucose_level"] = normalizer.normalize("avg_glucose_level", df["avg_glucose_level"])
 
-    return df
+    return df, normalizer
 
 
-def split_data(df):
-    df_true = df[df["stroke"] == 1]
-    df_false = df[df["stroke"] == 0]
+def new_split(df):
+    y = df[["stroke"]]
+    X = df.drop("stroke", axis=1)
 
-    x1 = int(df_true.shape[0] / 10)
-    x2 = int(df_false.shape[0] / 10)
+    x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, test_size=0.1, stratify=y)
 
-    test_data = pd.concat([df_true[:x1], df_false[:x2]])
-    train_data = pd.concat([df_true[x1:], df_false[x2:]])
+    smote = SMOTE(sampling_strategy="minority")
+    x_train, y_train = smote.fit_resample(x_train, y_train)
+    print("Shape of X: {}".format(x_train.shape))
+    print("Shape of y: {}".format(y_train.shape))
 
-    test_data = shuffle(test_data)
-    train_data = shuffle(train_data)
-
-    y_train = train_data["stroke"]
-    x_train = train_data.drop("stroke", axis=1)
-
-    y_test = test_data["stroke"]
-    x_test = test_data.drop("stroke", axis=1)
-
-    return x_train, y_train, x_test, y_test
+    return x_train, x_test, y_train, y_test

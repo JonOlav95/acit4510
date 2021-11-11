@@ -2,16 +2,16 @@ import sklearn
 from matplotlib import pyplot as plt
 import seaborn as sns
 import numpy as np
+import math
 
 
-def precision_recall_plot(clf, x, y_true, label=None):
-    y_proba = clf.predict_proba(x)
-    y_proba = y_proba[:, 1]
-    precision, recall, thresholds = sklearn.metrics.precision_recall_curve(y_true, y_proba)
+def precision_recall_plot(y_proba, y_true, label=None):
+    y = y_proba[:, 1]
+    precision, recall, thresholds = sklearn.metrics.precision_recall_curve(y_true, y)
     plt.title(label)
 
-    precision[-2] = 1
-    recall[-2] = 0
+    #precision[-2] = 1
+    #recall[-2] = 0
 
     plt.plot(thresholds, precision[:-1], "b--", label="Precision")
     plt.plot(thresholds, recall[:-1], "r--", label="Recall")
@@ -45,3 +45,5 @@ def plot_outlier(df):
     plt.xlabel("BMI")
     plt.ylabel("N")
     plt.show()
+
+
