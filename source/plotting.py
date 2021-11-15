@@ -10,8 +10,8 @@ def precision_recall_plot(y_proba, y_true, label=None):
     precision, recall, thresholds = sklearn.metrics.precision_recall_curve(y_true, y)
     plt.title(label)
 
-    #precision[-2] = 1
-    #recall[-2] = 0
+    # precision[-2] = 1
+    # recall[-2] = 0
 
     plt.plot(thresholds, precision[:-1], "b--", label="Precision")
     plt.plot(thresholds, recall[:-1], "r--", label="Recall")
@@ -47,3 +47,23 @@ def plot_outlier(df):
     plt.show()
 
 
+def plot_p_value(result):
+    p_values = []
+    p_values.append(1 - result.pvalues[0])
+    p_values.append(1 - result.pvalues[1])
+    p_values.append(1 - result.pvalues[2])
+    p_values.append(1 - result.pvalues[3])
+    p_values.append(1 - result.pvalues[4])
+
+    sns.histplot(data=p_values)
+    plt.show()
+
+    print("x")
+
+
+def outlier_boxplot(dataframe):
+    relevant = dataframe[["age", "avg_glucose_level", "bmi"]]
+    bplot = sns.boxplot(y='lifeExp', x='continent',
+                     data=relevant,
+                     width=0.5,
+                     palette="colorblind")

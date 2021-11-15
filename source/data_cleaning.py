@@ -49,8 +49,8 @@ def new_split(df):
     x_train, x_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, test_size=0.1, stratify=y)
 
     smote = SMOTE(sampling_strategy="minority")
-    x_train, y_train = smote.fit_resample(x_train, y_train)
+    oversample_x, oversample_y = smote.fit_resample(x_train, y_train)
     print("Shape of X: {}".format(x_train.shape))
     print("Shape of y: {}".format(y_train.shape))
 
-    return x_train, x_test, y_train, y_test
+    return x_train, x_test, y_train, y_test, oversample_x, oversample_y
