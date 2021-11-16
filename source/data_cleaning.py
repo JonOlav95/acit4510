@@ -50,7 +50,5 @@ def new_split(df):
 
     smote = SMOTE(sampling_strategy="minority")
     oversample_x, oversample_y = smote.fit_resample(x_train, y_train)
-    print("Shape of X: {}".format(x_train.shape))
-    print("Shape of y: {}".format(y_train.shape))
 
     return x_train, x_test, y_train, y_test, oversample_x, oversample_y

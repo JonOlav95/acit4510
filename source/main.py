@@ -35,7 +35,7 @@ def find_nearest(array, value):
 
 def my_cross_val(model, x_train, y_train):
     skfolds = StratifiedKFold(n_splits=6, shuffle=True, random_state=42)
-    avg_f1 = []
+    avg_threshold = []
 
     for train_index, test_index in skfolds.split(x_train, y_train):
         clone_model = clone(model)
@@ -45,12 +45,25 @@ def my_cross_val(model, x_train, y_train):
         y_test_fold = y_train.iloc[test_index]
 
         clone_model.fit(x_train_folds, y_train_folds.values.ravel())
-        y_pred = clone_model.predict(x_test_fold)
 
-        f1 = sklearn.metrics.f1_score(y_test_fold, y_pred, average="macro")
-        avg_f1.append(f1)
+        y_pred = clone_model.predict_proba(x_test_fold)
+        y_pred = y_pred[:, 1]
 
-    return np.mean(avg_f1)
+        precision, recall, thresholds = sklearn.metrics.precision_recall_curve(y_test_fold, y_pred)
+        fscore = (2 * precision * recall) / (precision + recall)
+        max_fscore = np.nanargmax(fscore)
+        t = thresholds[max_fscore]
+        largest_f1 = fscore[max_fscore]
+        avg_threshold.append(t)
+        precplot(precision, recall, thresholds)
+
+        decision = (y_pred >= t).astype('int')
+        arg_test = {"y_true": y_test_fold, "y_pred": decision}
+
+        #print(sklearn.metrics.confusion_matrix(**arg_test))
+        #print(sklearn.metrics.classification_report(**arg_test))
+
+    return np.mean(avg_threshold)
 
 
 def backward_stepwise_selection(model, x_train, y_train):
@@ -76,7 +89,7 @@ def backward_stepwise_selection(model, x_train, y_train):
         x_train.drop(worst_feature, axis=1, inplace=True)
         f1_scores.append(highest_f1)
 
-    plt.plot(list(reversed(f1_scores)))
+    plt.plot(range(1, len(f1_scores) + 1), list(reversed(f1_scores)))
     plt.xlabel("Number of features")
     plt.ylabel("F1 Score")
     plt.show()
@@ -88,18 +101,6 @@ def tmp(x_train, y_train, x_test, y_test):
     print("-" * 20 + "logistic regiression" + "-" * 20)
     y_pred = model.predict(x_test)
     arg_test = {"y_true": y_test, "y_pred": y_pred}
-    print(sklearn.metrics.confusion_matrix(**arg_test))
-    print(sklearn.metrics.classification_report(**arg_test))
-
-
-def test_model(model, x_train, x_test, y_train, y_test):
-    model.fit(x_train, y_train.values.ravel())
-    y = model.predict(x_test)
-
-    # TN  FN
-    # FP  TP
-    arg_test = {"y_true": y_test, "y_pred": y}
-
     print(sklearn.metrics.confusion_matrix(**arg_test))
     print(sklearn.metrics.classification_report(**arg_test))
 
@@ -166,6 +167,31 @@ def pvalue(x_train, y_train):
     plot_p_value(result)
 
 
+def test_model(model, x_train, x_test, y_train, y_test):
+    model.fit(x_train, y_train.values.ravel())
+    y = model.predict(x_test)
+
+    # TN  FP
+    # FN  TP
+    arg_test = {"y_true": y_test, "y_pred": y}
+
+    print(sklearn.metrics.confusion_matrix(**arg_test))
+    print(sklearn.metrics.classification_report(**arg_test))
+
+
+def move_threshold(model, x_train, x_test, y_train, y_test):
+    threshold = my_cross_val(model, x_train, y_train)
+    model.fit(x_train, y_train.values.ravel())
+    y = model.predict_proba(x_test)[:, 1]
+
+    decision = (y >= threshold).astype('int')
+
+    arg_test = {"y_true": y_test, "y_pred": decision}
+
+    print(sklearn.metrics.confusion_matrix(**arg_test))
+    print(sklearn.metrics.classification_report(**arg_test))
+
+
 def main():
     dataframe = pd.read_csv("dataset.csv")
 
@@ -175,15 +201,19 @@ def main():
     # pvalue(x_train, y_train)
     # tmp_forest(x_train, x_test, y_train, y_test)
 
-    lr_model = LogisticRegression(class_weight={0: 1.0, 1: 20.0}, max_iter=20000)
-    # ranfor_model = RandomForestClassifier(n_estimators=100, random_state=42)
-    # dc_model = DecisionTreeClassifier()
-    # svc_model = SVC(kernel='sigmoid', gamma='scale')
+    lr_model = LogisticRegression(class_weight={0: 1, 1: 20}, max_iter=20000)
+    ranfor_model = RandomForestClassifier()
+    dc_model = DecisionTreeClassifier()
+    svc_model = SVC(probability=True, kernel='sigmoid', gamma='scale')
     # knn_model = KNeighborsClassifier()
-    # gaus_model = GaussianNB()
+    gaus_model = GaussianNB()
     # kmeans_model = KMeans(n_clusters=2, n_init=10, random_state=42)
 
-    test_model_simple(lr_model, x_train, x_test, y_train, y_test)
+    #x_train = x_train[["age", "avg_glucose_level", "hypertension", "heart_disease", "bmi"]]
+    #x_test = x_test[["age", "avg_glucose_level", "hypertension", "heart_disease", "bmi"]]
+
+    test_model(ranfor_model, x_train, x_test, y_train, y_test)
+    #move_threshold(ranfor_model, x_train, x_test, y_train, y_test)
     # add_years(x_test, normalizer)
     # test_model(lr_model, x_train, x_test, y_train, y_test)
 
@@ -191,6 +221,7 @@ def main():
     # tp_diff = cf_matrix_future[1][1] - cf_matrix_now[1][1]
 
     # future_risk_one(lr_model, normalizer, y, x_test, y_test)
+
     #backward_stepwise_selection(lr_model, x_train, y_train)
 
 

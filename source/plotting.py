@@ -23,6 +23,17 @@ def precision_recall_plot(y_proba, y_true, label=None):
     plt.show()
 
 
+def precplot(precision, recall, thresholds):
+
+    plt.plot(thresholds, precision[:-1], "b--", label="Precision")
+    plt.plot(thresholds, recall[:-1], "r--", label="Recall")
+    plt.ylabel("Precision, Recall")
+    plt.xlabel("Threshold")
+    plt.legend(loc="lower left")
+    plt.ylim([0, 1])
+
+    plt.show()
+
 def plot_roc_curve(tpr, fpr, label=None):
     plt.plot(fpr, tpr, linewidth=2, label=label)
     plt.legend(loc="lower right")
